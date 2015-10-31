@@ -4,13 +4,14 @@ from itertools import izip
 
 import cv2
 import numpy as np
+from skimage.io import imread
 import indicoio
+from cStringIO import StringIO
 
-from ipdb import launch_ipdb_on_exception
-from ipdb import set_trace
+from .keys import INDICO_API_KEY
+indicoio.api_key = INDICO_API_KEY
 
-logging.basicConfig()
-logger = logging.getLogger("CATZ")
+SERVER_URL = "http://localhost:3000/random"
 
 def get_faces_dimens(image_string, bounds):
     try:
@@ -25,8 +26,8 @@ def get_faces_dimens(image_string, bounds):
         logger.error(e)
 
 def get_suitable_cat(width, height):
-    # TODO - pick most efficient cat  ( cat image dict with sizes )
-    image = cv2.imread("cat_4.png", cv2.IMREAD_UNCHANGED)
+    image = imread(SERVER_URL)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     resized_image = cv2.resize(image, (width, height))
     return resized_image
 
@@ -34,12 +35,12 @@ def show(img):
     cv2.imshow("result", img)
     cv2.waitKey()
 
-def main():
-    image_string = open("sample_2.txt", 'rb').read()
+def process(input_url):
+    input_image = imread(input_url)
+    input_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)
 
-    decoded = base64.b64decode(image_string)
-    final = cv2.imdecode(np.fromstring(decoded, np.uint8), cv2.CV_LOAD_IMAGE_COLOR)
-    faces = get_faces_dimens(image_string, final.shape)
+    image_string = base64.b64encode(cv2.imencode(".png", input_image)[1].tostring())
+    faces = get_faces_dimens(image_string, input_image.shape)
 
     cats = []
     for x1, y1, x2, y2 in faces:
@@ -48,12 +49,13 @@ def main():
         cats.append(cat)
 
     for (x1, y1, x2, y2), cat in izip(faces, cats):
-        mask = np.where(cat[:,:,3])
-        final[y1:y2, x1:x2, :][mask] = cat[:,:,:3][mask]
+        if cat.shape[2] > 3:
+            mask = np.where(cat[:,:,3])
+            input_image[y1:y2, x1:x2, :][mask] = cat[:,:,:3][mask]
+        else:
+            input_image[y1:y2, x1:x2, :] = cat
 
-    # show(final)
-    cv2.imsave("save.png", final)
-
-if __name__ == "__main__":
-    with launch_ipdb_on_exception():
-        main()
+    output = StringIO()
+    output.write(cv2.imencode(".png", input_image)[1].tostring())
+    output.seek(0)
+    return output
