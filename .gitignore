@@ -55,3 +55,7 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# API Keys
+keys.py
+consumed_tweets.txt
