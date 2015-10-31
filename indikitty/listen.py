@@ -1,5 +1,4 @@
 import time, logging, os
-import requests
 from multiprocessing import Pool
 
 import twitter

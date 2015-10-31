@@ -1,12 +1,12 @@
 import base64
 import logging
 from itertools import izip
+from cStringIO import StringIO
 
 import cv2
 import numpy as np
 from skimage.io import imread
 import indicoio
-from cStringIO import StringIO
 
 from .keys import INDICO_API_KEY
 indicoio.api_key = INDICO_API_KEY
